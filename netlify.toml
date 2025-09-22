@@ -1,0 +1,16 @@
+[build]
+  publish = "."
+  # Explicitly list the functions directory AND the specific function
+  functions = "netlify/functions"
+
+# Settings for the bundler
+[functions]
+  node_bundler = "esbuild"
+  [functions.node_config]
+     nodeVersion = "18"
+
+# Explicitly declare the function to ensure it's included
+# The name 'vimeo' here corresponds to the filename 'vimeo.js'
+[functions.vimeo]
+  # You could add specific node bundler settings here if needed,
+  # but often just declaring it is enough.

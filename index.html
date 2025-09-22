@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prize Wheel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+            background-color: #F8F9FA;
+            height: 100vh;
+            margin: 0;
+        }
+        #itemList::-webkit-scrollbar { width: 8px; }
+        #itemList::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        #itemList::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        #itemList::-webkit-scrollbar-thumb:hover { background: #555; }
+        main { position: relative; }
+        .wheel-display-area {
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Align the wheel to the right */
+        }
+        #wheelCanvas { position: absolute; overflow: visible; }
+        .wheel-pointer {
+            width: 0; height: 0;
+            border-top: 18px solid transparent;
+            border-bottom: 18px solid transparent;
+            border-left: 30px solid #333; /* Changed from border-right */
+            position: absolute;
+            top: 50%;
+            right: -30px; /* Changed from left */
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        @media (max-width: 767px) {
+            .wheel-pointer { display: none; }
+            .wheel-display-area { justify-content: center; }
+        }
+        .popup-enter { opacity: 0; transform: scale(0.9); }
+        .popup-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
+        .popup-leave { opacity: 1; transform: scale(1); }
+        .popup-leave-active { opacity: 0; transform: scale(0.9); transition: opacity 300ms, transform 300ms; }
+        #confettiCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+        #menuPanel { position: fixed; top: 0; right: 0; height: 100%; width: 384px; max-width: 90vw; transform: translateX(100%); transition: transform 0.3s ease-in-out; z-index: 50; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        #menuPanel.open { transform: translateX(0); }
+        #menuOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); z-index: 49; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; }
+        #menuOverlay.visible { opacity: 1; pointer-events: auto; }
+        @keyframes gradientCycle {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .gradient-background-animated {
+            background: linear-gradient(to right, #4b83f0, #d86673, #4b83f0);
+            background-size: 200% 100%;
+            animation: gradientCycle 4s linear infinite;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <canvas id="confettiCanvas"></canvas>
+    <div id="menuOverlay"></div>
+
+    <button id="menuToggleButton" class="fixed top-4 right-4 z-50 p-2 bg-white rounded-md shadow-md hover:bg-gray-100">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-700">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+    </button>
+
+    <main class="flex-grow flex flex-col md:flex-row items-stretch justify-center overflow-hidden h-full relative">
+        <div class="wheel-display-area w-full md:w-7/12 lg:w-1/2 h-full relative" style="left: 0px; overflow-visible">
+            <div class="wheel-pointer"></div>
+            <canvas id="wheelCanvas"></canvas>
+        </div>
+        <div class="w-full md:w-8/12 lg:w-1/2 h-full flex flex-col items-start justify-center text-left p-4 md:pl-0">
+            <img src="chromebooklogo.png"
+                 alt="Company Logo"
+                 style="width: 350px; height: auto;"
+                 onerror="this.onerror=null;this.src='https://placehold.co/240x60/F8F9FA/CCCCCC?text=Logo+Not+Found';">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 my-8">Prize Wheel</h1>
+            <button id="spinButton"
+                    class="py-3 px-10 shadow-md hover:shadow-lg transform hover:scale-105 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xl font-semibold transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400">
+                Spin Wheel
+            </button>
+            <p id="noActiveItemsMessage" class="text-red-500 mt-4 hidden">Add items with quantity > 0 to spin!</p>
+        </div>
+    </main>
+
+    <div id="menuPanel" class="bg-white p-4 flex flex-col h-full">
+        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+            <h2 class="text-xl font-semibold text-gray-700">Wheel Items</h2>
+            <button id="closeMenuButton" class="p-2 rounded-md hover:bg-gray-200">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="mb-4 p-4 bg-gray-50 rounded-xl shadow flex-shrink-0">
+            <label for="newItemName" class="block text-sm font-medium text-gray-600 mb-2">Add New Item</label>
+            <input type="text" id="newItemName" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mb-2" placeholder="Prize Name">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <label for="newItemQuantity" class="text-sm font-medium text-gray-600">Quantity:</label>
+                    <input type="number" id="newItemQuantity" class="w-20 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" value="1" min="1">
+                </div>
+                <button id="addNewItemButton" title="Add item" class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600">
+                    Add
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-4 p-4 bg-gray-50 rounded-xl shadow flex-shrink-0">
+            <h3 class="text-lg font-medium text-gray-600 mb-2">Bulk Actions</h3>
+            <label for="bulkItemInput" class="block text-sm font-medium text-gray-600 mb-1">Paste list (e.g., "Prize Name, 10"):</label>
+            <textarea id="bulkItemInput" rows="4" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mb-2" placeholder="T-Shirt, 25&#10;Mug, 50&#10;Sticker, 100"></textarea>
+            <button id="bulkAddButton" class="w-full mb-3 py-2 px-4 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 transition-colors">Add from List</button>
+            <button id="clearAllButton" class="w-full py-2 px-4 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition-colors">Clear All Items</button>
+            <div id="clearConfirmation" class="hidden mt-2 text-center">
+                <p class="text-sm text-gray-700 mb-2">Are you sure?</p>
+                <button id="confirmClearButton" class="w-full py-1 px-4 bg-red-700 text-white font-bold rounded-md hover:bg-red-800">Yes, Clear All</button>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto pr-1" id="itemListContainer">
+            <p id="noItemsMessage" class="text-gray-500 text-sm hidden">No items yet. Add some!</p>
+            <ul id="itemList" class="space-y-2"></ul>
+        </div>
+        <p class="text-xs text-gray-400 mt-4 flex-shrink-0">Changes are saved automatically.</p>
+    </div>
+
+    <div id="winPopup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden popup-enter">
+        <div class="gradient-background-animated rounded-xl shadow-2xl max-w-sm w-full">
+             <div class="bg-white p-8 rounded-xl text-center w-full">
+                 <h3 class="text-2xl font-bold mb-3 text-gray-800">Congratulations!</h3>
+                 <p class="text-gray-700 text-lg mb-1">You've won:</p>
+                 <p id="winningItemText" class="text-3xl font-semibold text-blue-600 mb-6 break-words"></p>
+                 <button id="closePopupButton" class="py-2 px-4 rounded-full shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-opacity-50 w-full bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-400">Spin Again</button>
+             </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM References
+        const wheelCanvas = document.getElementById('wheelCanvas');
+        const ctx = wheelCanvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        const newItemNameInput = document.getElementById('newItemName');
+        const newItemQuantityInput = document.getElementById('newItemQuantity');
+        const addNewItemButton = document.getElementById('addNewItemButton');
+        const itemListElement = document.getElementById('itemList');
+        const noItemsMessage = document.getElementById('noItemsMessage');
+        const noActiveItemsMessage = document.getElementById('noActiveItemsMessage');
+        const winPopup = document.getElementById('winPopup');
+        const winningItemText = document.getElementById('winningItemText');
+        const closePopupButton = document.getElementById('closePopupButton');
+        const menuPanel = document.getElementById('menuPanel');
+        const menuToggleButton = document.getElementById('menuToggleButton');
+        const closeMenuButton = document.getElementById('closeMenuButton');
+        const menuOverlay = document.getElementById('menuOverlay');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        const bulkItemInput = document.getElementById('bulkItemInput');
+        const bulkAddButton = document.getElementById('bulkAddButton');
+        const clearAllButton = document.getElementById('clearAllButton');
+        const clearConfirmation = document.getElementById('clearConfirmation');
+        const confirmClearButton = document.getElementById('confirmClearButton');
+
+        // State Variables
+        let items = [];
+        let currentRotation = 0;
+        let isSpinning = false;
+        let menuOpen = false;
+        let winningItemId = null;
+        let popOutProgress = 0;
+        let popOutAnimationId = null;
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+        let currentlyEditingItemId = null; // To track which item is being edited
+
+        // Constants
+        const googleColors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853'];
+        const STORAGE_KEY = 'prizeWheelItems_v4'; // Updated storage key for new data structure
+        const POP_OUT_OFFSET = 15;
+        const POP_OUT_DURATION = 300;
+        const POPUP_DELAY = 500;
+
+        // --- Item Management ---
+        function loadItems() {
+            const storedItems = localStorage.getItem(STORAGE_KEY);
+            if (storedItems) {
+                try {
+                    items = JSON.parse(storedItems);
+                    if (!Array.isArray(items) || items.some(item => typeof item.quantity !== 'number')) {
+                       throw new Error("Invalid data structure, missing quantity.");
+                    }
+                } catch (e) {
+                    console.warn("Invalid data in localStorage. Resetting.", e);
+                    items = getDefaultItems();
+                }
+            } else {
+                items = getDefaultItems();
+            }
+            saveItems();
+        }
+
+        function getDefaultItems() {
+            return [
+                { id: '1', name: 'Gemini tumblers', quantity: 4, active: true },
+                { id: '2', name: 'Stanley mugs', quantity: 8, active: true },
+                { id: '3', name: 'T-shirts', quantity: 20, active: true },
+                { id: '4', name: 'Socks', quantity: 25, active: true },
+                { id: '5', name: 'Picnic Blankets', quantity: 10, active: true },
+                { id: '6', name: 'Power Banks', quantity: 16, active: true },
+                { id: '7', name: 'JBL Clip 5', quantity: 5, active: true }
+            ];
+        }
+
+        function saveItems() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            } catch (e) {
+                console.error("Error saving items:", e);
+            }
+            renderItemsList();
+            drawWheel();
+            checkActiveItems();
+        }
+
+        function renderItemsList() {
+            itemListElement.innerHTML = '';
+            noItemsMessage.classList.toggle('hidden', items.length > 0);
+            
+            items.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.className = `p-3 bg-gray-50 rounded-lg shadow-sm transition-colors ${item.quantity === 0 ? 'opacity-60' : ''}`;
+                
+                const isEditing = currentlyEditingItemId === item.id;
+
+                // Top part: Checkbox and Name/Input
+                const topRow = document.createElement('div');
+                topRow.className = 'flex items-center justify-between';
+
+                const itemInfo = document.createElement('div');
+                itemInfo.className = 'flex items-center flex-grow min-w-0 mr-2';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = item.active;
+                checkbox.className = 'form-checkbox h-5 w-5 text-blue-500 rounded border-gray-300 focus:ring-blue-400 mr-3 cursor-pointer flex-shrink-0';
+                checkbox.addEventListener('change', () => {
+                    item.active = checkbox.checked;
+                    saveItems();
+                });
+                itemInfo.appendChild(checkbox);
+
+                if (isEditing) {
+                    const inputField = document.createElement('input');
+                    inputField.type = 'text';
+                    inputField.value = item.name;
+                    inputField.className = 'text-gray-800 font-semibold p-1 border border-blue-300 rounded-md flex-grow min-w-0';
+                    const saveEdit = () => {
+                        const newName = inputField.value.trim();
+                        if (newName) item.name = newName;
+                        currentlyEditingItemId = null;
+                        saveItems();
+                    };
+                    inputField.addEventListener('blur', saveEdit);
+                    inputField.addEventListener('keydown', (e) => { if (e.key === 'Enter') inputField.blur(); });
+                    itemInfo.appendChild(inputField);
+                    setTimeout(() => inputField.focus(), 0);
+                } else {
+                    const itemNameSpan = document.createElement('span');
+                    itemNameSpan.textContent = item.name;
+                    itemNameSpan.className = 'text-gray-800 font-semibold truncate cursor-pointer hover:text-blue-600';
+                    itemNameSpan.title = 'Click to edit name';
+                    itemNameSpan.addEventListener('click', () => {
+                        currentlyEditingItemId = item.id;
+                        renderItemsList();
+                    });
+                    itemInfo.appendChild(itemNameSpan);
+                }
+                topRow.appendChild(itemInfo);
+
+                // Bottom part: Quantity controls and Delete button
+                const bottomRow = document.createElement('div');
+                bottomRow.className = 'flex items-center justify-between mt-2';
+
+                const quantityControls = document.createElement('div');
+                quantityControls.className = 'flex items-center space-x-2';
+                
+                const minusButton = document.createElement('button');
+                minusButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>`;
+                minusButton.className = 'p-1 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300';
+                minusButton.addEventListener('click', () => {
+                    item.quantity = Math.max(0, item.quantity - 1);
+                    saveItems();
+                });
+
+                const quantityDisplay = document.createElement('span');
+                quantityDisplay.textContent = `${item.quantity} left`;
+                quantityDisplay.className = 'text-sm text-gray-600 font-medium w-16 text-center';
+
+                const plusButton = document.createElement('button');
+                plusButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>`;
+                plusButton.className = 'p-1 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300';
+                plusButton.addEventListener('click', () => {
+                    item.quantity += 1;
+                    saveItems();
+                });
+
+                quantityControls.appendChild(minusButton);
+                quantityControls.appendChild(quantityDisplay);
+                quantityControls.appendChild(plusButton);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400 hover:text-red-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+                deleteButton.className = 'p-1 rounded-md hover:bg-red-100 transition-colors';
+                deleteButton.title = "Delete Item";
+                deleteButton.addEventListener('click', () => {
+                    items = items.filter(i => i.id !== item.id);
+                    saveItems();
+                });
+
+                bottomRow.appendChild(quantityControls);
+                bottomRow.appendChild(deleteButton);
+                
+                listItem.appendChild(topRow);
+                listItem.appendChild(bottomRow);
+                itemListElement.appendChild(listItem);
+            });
+        }
+
+        function triggerAddItem() {
+            const name = newItemNameInput.value.trim();
+            const quantity = parseInt(newItemQuantityInput.value, 10);
+            if (name && !isNaN(quantity) && quantity > 0) {
+                const newId = Date.now().toString() + `_${Math.random()}`;
+                items.push({ id: newId, name, quantity, active: true });
+                newItemNameInput.value = '';
+                newItemQuantityInput.value = '1';
+                saveItems();
+            }
+        }
+        
+        function handleBulkAdd() {
+            const text = bulkItemInput.value.trim();
+            if (!text) return;
+
+            const newItems = text.split('\n').map(line => {
+                const parts = line.split(',');
+                const name = parts[0]?.trim();
+                const quantity = parseInt(parts[1]?.trim(), 10);
+                return { name, quantity };
+            }).filter(item => item.name && !isNaN(item.quantity) && item.quantity > 0);
+
+            newItems.forEach(({ name, quantity }) => {
+                const newId = Date.now().toString() + `_${Math.random()}`;
+                items.push({ id: newId, name, quantity, active: true });
+            });
+            
+            bulkItemInput.value = '';
+            saveItems();
+        }
+
+        function handleClearAll() {
+            items = [];
+            clearConfirmation.classList.add('hidden');
+            saveItems();
+        }
+
+        // --- Wheel Drawing (WEIGHTED LOGIC) ---
+        function drawWheel() {
+            const activeItems = items.filter(item => item.active && item.quantity > 0);
+            const totalQuantity = activeItems.reduce((sum, item) => sum + item.quantity, 0);
+            
+            const container = wheelCanvas.parentElement;
+            if (!container) return;
+            const containerHeight = container.offsetHeight;
+            if (!containerHeight) { requestAnimationFrame(drawWheel); return; }
+
+            const radius = containerHeight / 2;
+            wheelCanvas.width = radius * 2 + POP_OUT_OFFSET * 2;
+            wheelCanvas.height = radius * 2 + POP_OUT_OFFSET * 2;
+            const canvasCenter = radius + POP_OUT_OFFSET;
+            
+            wheelCanvas.style.left = `${-radius - POP_OUT_OFFSET}px`;
+            wheelCanvas.style.top = `${-POP_OUT_OFFSET}px`;
+
+            ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+            ctx.save();
+            ctx.translate(canvasCenter, canvasCenter);
+            ctx.rotate(currentRotation); // Rotate the entire canvas context before drawing
+
+            if (activeItems.length === 0) {
+                ctx.restore(); // Restore before drawing static text
+                ctx.fillStyle = '#AAA';
+                ctx.textAlign = 'center';
+                ctx.font = '16px "Inter", sans-serif';
+                ctx.fillText("Add items to spin!", canvasCenter, canvasCenter);
+                return;
+            }
+
+            let startAngle = 0; // Start drawing from angle 0
+
+            activeItems.forEach((item, index) => {
+                const sliceAngle = (item.quantity / totalQuantity) * (2 * Math.PI);
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.save();
+                
+                // Correctly calculate pop-out based on the un-rotated angle
+                if (item.id === winningItemId && popOutProgress > 0) {
+                    const popOutAngle = startAngle + sliceAngle / 2;
+                    const offsetX = Math.cos(popOutAngle) * POP_OUT_OFFSET * popOutProgress;
+                    const offsetY = Math.sin(popOutAngle) * POP_OUT_OFFSET * popOutProgress;
+                    ctx.translate(offsetX, offsetY);
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                // Draw the arc relative to the already rotated context
+                ctx.arc(0, 0, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = googleColors[index % googleColors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // --- Corrected Text Drawing Logic for Horizontal Text ---
+                ctx.save(); 
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                const textFontSize = Math.max(12, Math.min(20, radius * sliceAngle * 0.2));
+                ctx.font = `bold ${textFontSize}px 'Inter', sans-serif`;
+                const textDist = radius * 0.65;
+                const practicalMaxTextWidth = radius * sliceAngle * 0.8;
+
+                // The static angle to the middle of the slice
+                const textAngle = startAngle + sliceAngle / 2;
+                
+                // Rotate to point along the slice's radius
+                ctx.rotate(textAngle);
+                // Move out from the center
+                ctx.translate(textDist, 0);
+                // Counter-rotate to make the text horizontal relative to the viewport
+                ctx.rotate(-textAngle - currentRotation); 
+                
+                wrapText(ctx, item.name, 0, 0, practicalMaxTextWidth, textFontSize * 1.1, 2);
+                ctx.restore(); 
+
+                ctx.restore(); // Restore from pop-out translation
+                startAngle = endAngle; // Increment angle for the next slice
+            });
+            ctx.restore(); // Restore from the main rotation and translation
+            checkActiveItems();
+        }
+        
+        function wrapText(context, text, x, y, maxWidth, lineHeight, maxLines) {
+            const words = text.split(' ');
+            let lines = [];
+            let currentLine = words[0] || "";
+            for (let i = 1; i < words.length; i++) {
+                const testLine = currentLine + " " + words[i];
+                if (context.measureText(testLine).width < maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            if (lines.length > maxLines) {
+                let lastLine = lines[maxLines - 1];
+                while(context.measureText(lastLine + "...").width > maxWidth && lastLine.length > 0) {
+                    lastLine = lastLine.slice(0, -1);
+                }
+                lines[maxLines - 1] = lastLine + "...";
+                lines = lines.slice(0, maxLines);
+            }
+            const startY = y - (lines.length - 1) * lineHeight / 2;
+            lines.forEach((line, i) => context.fillText(line, x, startY + i * lineHeight));
+        }
+
+        // --- Wheel Spinning (WEIGHTED LOGIC) ---
+        function spinWheel() {
+            if (isSpinning) return;
+            const activeItems = items.filter(item => item.active && item.quantity > 0);
+            if (activeItems.length === 0) return;
+
+            isSpinning = true;
+            popOutProgress = 0;
+            winningItemId = null;
+            if (popOutAnimationId) cancelAnimationFrame(popOutAnimationId);
+
+            spinButton.disabled = true;
+            spinButton.classList.add('opacity-50', 'cursor-not-allowed');
+            spinButton.textContent = "Spinning...";
+
+            const totalQuantity = activeItems.reduce((sum, item) => sum + item.quantity, 0);
+            const winningValue = Math.random() * totalQuantity;
+
+            let cumulativeQuantity = 0;
+            let winningItem = null;
+            let angleToWinner = 0;
+
+            let tempStartAngle = 0;
+            for (const item of activeItems) {
+                const sliceAngle = (item.quantity / totalQuantity) * 2 * Math.PI;
+                cumulativeQuantity += item.quantity;
+                if (winningValue < cumulativeQuantity) {
+                    winningItem = item;
+                    angleToWinner = tempStartAngle + sliceAngle / 2;
+                    break;
+                }
+                tempStartAngle += sliceAngle;
+            }
+            
+            const spinDuration = 8000;
+            const randomExtraSpins = Math.floor(Math.random() * 5) + 10;
+            // The pointer is at the right (0 or 2*PI radians). We adjust the target rotation to land the winner there.
+            const finalTargetRotation = (2 * Math.PI * randomExtraSpins) + (2 * Math.PI - angleToWinner);
+            
+            let startTime = null;
+            const initialRotation = currentRotation;
+
+            function animateSpin(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / spinDuration, 1);
+                const easedProgress = 1 - Math.pow(1 - progress, 4);
+
+                currentRotation = initialRotation + (finalTargetRotation - initialRotation) * easedProgress;
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    currentRotation %= (2 * Math.PI);
+                    winningItemId = winningItem.id;
+                    
+                    const itemInMainList = items.find(i => i.id === winningItemId);
+                    if (itemInMainList) {
+                        itemInMainList.quantity = Math.max(0, itemInMainList.quantity - 1);
+                    }
+                    saveItems();
+
+                    startPopOutAnimation(() => {
+                        showWinPopup(winningItem.name);
+                        isSpinning = false;
+                        checkActiveItems();
+                        spinButton.textContent = "Spin Wheel";
+                    });
+                }
+            }
+            requestAnimationFrame(animateSpin);
+        }
+
+        // --- Animations & Popups ---
+        function startPopOutAnimation(callback) {
+            let startTime = null;
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / POP_OUT_DURATION, 1);
+                popOutProgress = 1 - Math.pow(1 - progress, 3);
+                drawWheel();
+                if (progress < 1) requestAnimationFrame(animate);
+                else if (callback) callback();
+            }
+            if (popOutAnimationId) cancelAnimationFrame(popOutAnimationId);
+            popOutAnimationId = requestAnimationFrame(animate);
+        }
+
+        function showWinPopup(itemName) {
+            winningItemText.textContent = itemName;
+            winPopup.classList.remove('hidden', 'popup-leave', 'popup-leave-active');
+            winPopup.classList.add('popup-enter');
+            void winPopup.offsetWidth;
+            winPopup.classList.add('popup-enter-active');
+            startConfettiBurst();
+        }
+
+        function closeWinPopup() {
+            winPopup.classList.remove('popup-enter', 'popup-enter-active');
+            winPopup.classList.add('popup-leave');
+            void winPopup.offsetWidth;
+            winPopup.classList.add('popup-leave-active');
+            setTimeout(() => {
+                winPopup.classList.add('hidden');
+                popOutProgress = 0;
+                winningItemId = null;
+                drawWheel();
+            }, 300);
+        }
+
+        function startConfettiBurst() {
+            resizeConfettiCanvas();
+            confettiParticles = [];
+            for (let i = 0; i < 150; i++) confettiParticles.push(createConfettiParticle());
+            if (!confettiAnimationId) animateConfetti();
+        }
+
+        function createConfettiParticle() {
+            return {
+                x: Math.random() * confettiCanvas.width, y: -20,
+                size: Math.random() * 15 + 6,
+                speedY: Math.random() * 3 + 2, speedX: Math.random() * 10 - 5,
+                rotation: Math.random() * 360, rotationSpeed: Math.random() * 10 - 5,
+                color: googleColors[Math.floor(Math.random() * googleColors.length)],
+                opacity: 1
+            };
+        }
+
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiParticles.forEach((p) => {
+                p.y += p.speedY; p.x += p.speedX; p.rotation += p.rotationSpeed; p.opacity -= 0.005;
+                if (p.opacity > 0 && p.y <= confettiCanvas.height) {
+                    confettiCtx.save();
+                    confettiCtx.translate(p.x + p.size / 2, p.y + p.size / 2);
+                    confettiCtx.rotate(p.rotation * Math.PI / 180);
+                    confettiCtx.globalAlpha = p.opacity;
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.5);
+                    confettiCtx.restore();
+                }
+            });
+             confettiParticles = confettiParticles.filter(p => p.opacity > 0 && p.y <= confettiCanvas.height);
+            if (confettiParticles.length > 0) {
+                confettiAnimationId = requestAnimationFrame(animateConfetti);
+            } else {
+                confettiAnimationId = null;
+            }
+        }
+        
+        function resizeConfettiCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        function toggleMenu(show) {
+            menuOpen = show;
+            menuPanel.classList.toggle('open', menuOpen);
+            menuOverlay.classList.toggle('visible', menuOpen);
+            if (show) newItemNameInput.focus();
+        }
+
+        function checkActiveItems() {
+            const hasActiveItems = items.some(item => item.active && item.quantity > 0);
+            spinButton.disabled = !hasActiveItems || isSpinning;
+            spinButton.classList.toggle('opacity-50', !hasActiveItems || isSpinning);
+            spinButton.classList.toggle('cursor-not-allowed', !hasActiveItems || isSpinning);
+            noActiveItemsMessage.classList.toggle('hidden', hasActiveItems);
+        }
+
+        function onResize() {
+            requestAnimationFrame(() => { drawWheel(); resizeConfettiCanvas(); });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadItems();
+            resizeConfettiCanvas();
+            window.addEventListener('resize', onResize);
+            
+            addNewItemButton.addEventListener('click', triggerAddItem);
+            bulkAddButton.addEventListener('click', handleBulkAdd);
+            clearAllButton.addEventListener('click', () => clearConfirmation.classList.remove('hidden'));
+            confirmClearButton.addEventListener('click', handleClearAll);
+
+            spinButton.addEventListener('click', spinWheel);
+            closePopupButton.addEventListener('click', closeWinPopup);
+            winPopup.addEventListener('click', (e) => { if (e.target === winPopup) closeWinPopup(); });
+
+            menuToggleButton.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(true); });
+            closeMenuButton.addEventListener('click', () => toggleMenu(false));
+            menuOverlay.addEventListener('click', () => toggleMenu(false));
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && menuOpen) toggleMenu(false); });
+
+            // Initial Draw
+            requestAnimationFrame(drawWheel);
+        });
+    </script>
+</body>
+</html>

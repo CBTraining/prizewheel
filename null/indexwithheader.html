@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chromebook Certifications with Header</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Custom Font Definition --- */
+        @font-face {
+            font-family: 'Google Sans Custom';
+            src: url('GoogleSans-Regular.ttf') format('truetype'); /* Update path if needed */
+            font-weight: 400; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Google Sans Custom';
+            src: url('GoogleSans-Medium.ttf') format('truetype'); /* Update path if needed */
+            font-weight: 500; font-style: normal; font-display: swap;
+        }
+         @font-face {
+            font-family: 'Google Sans Custom';
+            src: url('GoogleSans-Bold.ttf') format('truetype'); /* Update path if needed */
+            font-weight: 700; font-style: normal; font-display: swap;
+         }
+        /* --- End Custom Font Definition --- */
+
+        body {
+            font-family: 'Google Sans Custom', 'Roboto', 'Inter', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+
+        /* --- Header Styles --- */
+        /* Apply Inter font specifically to header nav list items */
+        header#main-header nav ul li a {
+             font-family: 'Inter', sans-serif;
+        }
+        /* Apply Google Sans Custom specifically to the logo text span */
+        header#main-header > nav > div:first-child > a > span { /* Specific selector for logo span */
+            font-family: 'Google Sans Custom', sans-serif;
+            font-weight: 400; /* Ensure regular weight */
+        }
+        /* Simple dropdown indicator */
+        .dropdown-indicator::after {
+            content: ' ▼'; /* Using a simple down arrow character */
+            font-size: 0.6em; /* Smaller size for the indicator */
+            display: inline-block;
+            margin-left: 4px; /* Space between text and indicator */
+            vertical-align: middle;
+        }
+
+        /* --- Page Header Adjustments --- */
+        h1#page-title {
+            font-weight: 700; /* Bold */
+            color: #202124; /* Custom text color */
+            /* Further Increased font size */
+            font-size: 3.75rem; /* ~text-6xl */
+            line-height: 1;
+        }
+        @media (min-width: 768px) { h1#page-title { font-size: 4.5rem; line-height: 1; } } /* ~text-7xl */
+        p#page-subtitle {
+            font-weight: 400;
+            color: #4a5568; /* text-gray-600 */
+             /* Further Increased font size */
+            font-size: 1.5rem; /* text-2xl */
+            line-height: 2rem;
+        }
+         @media (min-width: 768px) { p#page-subtitle { font-size: 1.875rem; line-height: 2.25rem; } } /* text-3xl */
+        #hero-image {
+             /* Further Increased max-width */
+             max-width: 56rem; /* ~max-w-4xl */
+        }
+        header#page-content-header {
+             margin-bottom: 2.5rem; /* mb-10 */
+             padding-top: 3rem; /* Added pt-12 for padding above title */
+        }
+        @media (min-width: 768px) { header#page-content-header { margin-bottom: 3rem; /* mb-12 */ } }
+
+        /* --- Fade-in Up Animation --- */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        header#page-content-header #page-title, header#page-content-header #page-subtitle, header#page-content-header #hero-image { animation: fadeInUp 0.6s ease-out forwards; opacity: 0; }
+        header#page-content-header #page-subtitle { animation-delay: 0.1s; }
+        header#page-content-header #hero-image { animation-delay: 0.2s; }
+
+        /* Grid Item */
+        .video-item {
+             /* Add transition for smooth appearance */
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0; /* Start hidden for fadeIn effect */
+            transform: translateY(10px); /* Start slightly lower */
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* Style for when item becomes visible */
+        .video-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #loading-indicator { display: none; text-align: center; padding: 2rem; font-style: italic; color: #6b7280; font-size: 1rem; }
+
+        /* Grid */
+        #video-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem; /* gap-8 */
+            /* Add transition for fade effect on filter change */
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* Style for grid when loading/filtering */
+        #video-grid.grid-loading {
+            opacity: 0.3;
+            pointer-events: none; /* Prevent clicking items while loading */
+        }
+
+
+        /* Thumbnail */
+        .thumbnail-container { display: block; aspect-ratio: 16 / 9; background-color: #e5e7eb; overflow: hidden; position: relative; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; transition: transform 0.3s ease-in-out; }
+        .thumbnail-container img { width: 100%; height: 100%; object-fit: cover; }
+        .overlay-title { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.8) 60%, rgba(0,0,0,0) 100%); color: white; padding: 0.75rem 1rem; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; font-size: 0.95rem; line-height: 1.35; font-weight: 400; white-space: normal; overflow-wrap: break-word; max-height: 80%; overflow-y: auto; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+        .video-item:hover .thumbnail-container { transform: scale(1.03); }
+        .video-item:hover .overlay-title { opacity: 1; }
+
+        /* Filter/Search Bar */
+        #filter-search-controls {
+            display: flex; align-items: center; justify-content: space-between;
+            /* Further Increased padding */
+            padding: 1rem 2rem;
+            background-color: white; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2.5rem; /* mb-10 */
+            overflow: hidden; position: relative;
+            /* Further Increased max-width */
+            max-width: 1024px; /* lg */
+            margin-left: auto; margin-right: auto;
+        }
+        #filter-buttons { display: flex; justify-content: space-around; flex-grow: 1; flex-shrink: 1; transition: opacity 0.2s ease-in-out 0.1s; margin-right: 0.75rem; min-width: 0; opacity: 1; position: relative; z-index: 2; }
+        .filter-button {
+            /* Further Increased padding and font size */
+            padding: 0.875rem 1.5rem; /* ~py-3.5 px-6 */
+            font-size: 1.125rem; /* text-lg */
+            border: none; background-color: transparent; color: #5f6368; border-radius: 9999px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, font-weight 0.2s ease-in-out; white-space: nowrap; text-align: center; flex-shrink: 0; font-family: 'Google Sans Custom', 'Roboto', 'Inter', sans-serif;
+        }
+        .filter-button.active { background-color: transparent; color: #3C4043; font-weight: 700; }
+        #filter-search-controls:not(.search-active) .filter-button:not(.active):hover { background-color: #f1f3f4; color: #3c4043; }
+        #search-container { display: flex; align-items: center; flex-shrink: 0; justify-content: flex-end; min-width: 44px; position: relative; z-index: 3; }
+        #search-icon-button { order: 2; background: none; border: none; padding: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s ease-in-out; z-index: 2; flex-shrink: 0; }
+        #filter-search-controls:not(.search-active) #search-icon-button:hover { background-color: #f1f3f4; }
+        #search-icon-button svg { width: 22px; height: 22px; fill: #5f6368; }
+        #search-input {
+             /* Further Increased font size and padding */
+            font-size: 1.125rem; /* text-lg */
+            padding: 0.875rem 1.5rem; /* ~py-3.5 px-6 */
+            padding-right: 0.5rem;
+            order: 1; border: none; outline: none; border-radius: 9999px; background-color: transparent; width: 0; opacity: 0; transition: width 0.3s ease-in-out, opacity 0.2s ease-in-out, background-color 0.3s ease-in-out; z-index: 1; font-weight: 400; color: #3C4043; min-width: 0; font-family: 'Google Sans Custom', 'Roboto', 'Inter', sans-serif; height: 100%;
+        }
+        #search-input::placeholder { color: #80868b; }
+        #filter-search-controls.search-active #filter-buttons { opacity: 0.4; transition: opacity 0.15s ease-out; }
+        #filter-search-controls.search-active #search-input { opacity: 1; width: 300px; background-color: #f1f3f4; transition: width 0.3s ease-in-out 0.05s, opacity 0.2s ease-in-out 0.1s, background-color 0.3s ease-in-out 0.05s; }
+
+        /* Messages */
+        .hidden { display: none !important; }
+        #no-results-message { display: none; text-align: center; padding: 2rem; font-style: italic; color: #6b7280; grid-column: 1 / -1; font-size: 1rem; }
+        #end-of-content-message { font-size: 1rem; padding: 2rem; text-align: center; color: #6b7280; grid-column: 1 / -1; display: none; }
+
+        /* Modal */
+        #video-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 1000; display: flex; justify-content: center; align-items: center; padding: 1.5rem; }
+        #modal-content { position: relative; width: 95%; aspect-ratio: 16 / 9; max-width: 1280px; max-height: 95vh; overflow: hidden; background-color: #000; border-radius: 0.5rem; }
+        #video-player-iframe { width: 100%; height: 100%; border: none; display: block; border-radius: 0.5rem; }
+        .modal-button { position: absolute; color: white; border: none; background: rgba(60, 60, 60, 0.6); padding: 10px; cursor: pointer; transition: background-color 0.3s ease, opacity 0.3s ease; z-index: 1010; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        .modal-button:hover { background-color: rgba(90, 90, 90, 0.8); }
+        .modal-button:disabled { opacity: 0.3; cursor: not-allowed; background-color: rgba(60, 60, 60, 0.4); }
+        .modal-button svg { width: 24px; height: 24px; fill: white; }
+        #prev-video { top: 50%; left: max(20px, 1.5%); transform: translateY(-50%); }
+        #next-video { top: 50%; right: max(20px, 1.5%); transform: translateY(-50%); }
+        #close-modal { top: max(20px, 1.5%); right: max(20px, 1.5%); font-size: 28px; width: 40px; height: 40px; line-height: 1; }
+        body.modal-open { overflow: hidden; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+             #video-modal { padding: 0.5rem; }
+             #modal-content { width: 100%; max-height: 90vh; max-width: none; }
+             #prev-video { left: 10px; padding: 8px;}
+             #next-video { right: 10px; padding: 8px;}
+             #close-modal { top: 10px; right: 10px; width: 36px; height: 36px; font-size: 24px; }
+             .modal-button svg { width: 20px; height: 20px; }
+             #video-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+             /* Adjusted mobile title/subtitle */
+             h1#page-title { font-size: 2.25rem; } /* text-4xl */
+             p#page-subtitle { font-size: 1.125rem; } /* text-lg */
+             .overlay-title { font-size: 0.875rem; padding: 0.6rem; line-height: 1.25; max-height: 75%; }
+             #filter-search-controls { max-width: 95%; padding: 0.5rem 0.75rem; margin-bottom: 2rem;}
+             #filter-buttons { justify-content: space-around; margin-right: 0.5rem;}
+             .filter-button { padding: 0.5rem 0.75rem; font-size: 0.9rem; } /* Kept mobile filter button size */
+             #search-icon-button svg { width: 20px; height: 20px; }
+             #search-input { font-size: 0.9rem; padding: 0.5rem 0.75rem; } /* Kept mobile search input size */
+             #filter-search-controls.search-active #search-input { width: calc(100% - 44px); }
+             #hero-image { max-width: 90%; } /* Adjust hero image max-width for mobile */
+             header#page-content-header { padding-top: 2rem; } /* Adjust padding for mobile */
+        }
+        /* Main Container Padding Adjustment for Sticky Header */
+        .main-content-container { padding-top: 5rem; /* Added padding-top (adjust value as needed) */ }
+
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header id="main-header" class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+                <a href="#" class="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+                    <img src="Chromebooklogo.png" alt="Chromebook logo" class="h-6 w-auto">
+                    <span>chromebook</span>
+                </a>
+
+                <ul class="hidden md:flex items-center space-x-6">
+                    <li><a href="#" class="text-gray-600 hover:text-gray-900 text-sm font-medium dropdown-indicator">About Chromebook</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-gray-900 text-sm font-medium dropdown-indicator">Explore</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-gray-900 text-sm font-medium dropdown-indicator">Do more</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-gray-900 text-sm font-medium">For Education</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-gray-900 text-sm font-medium">For Business</a></li>
+                </ul>
+            </div>
+
+            <div class="flex items-center">
+                <a href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                    Try Gemini
+                </a>
+                <button id="mobile-menu-button" class="md:hidden ml-4 p-2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                    <span class="sr-only">Open main menu</span>
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <div class="md:hidden hidden" id="mobile-menu">
+            <ul class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                 <li><a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 dropdown-indicator">About Chromebook</a></li>
+                 <li><a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 dropdown-indicator">Explore</a></li>
+                 <li><a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 dropdown-indicator">Do more</a></li>
+                 <li><a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">For Education</a></li>
+                 <li><a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">For Business</a></li>
+            </ul>
+        </div>
+    </header>
+    <div class="main-content-container px-4 sm:px-8 py-8">
+
+        <header id="page-content-header" class="mb-10 md:mb-12 text-center pt-12">
+             <div class="flex flex-col items-center">
+                 <h1 id="page-title" class="text-6xl md:text-7xl font-bold">Chromebook Certified</h1>
+                  <p id="page-subtitle" class="text-2xl md:text-3xl text-gray-600 mt-1">NotebookLM | Gemini Canvas</p>
+                 <img id="hero-image" src="CBHeroimage.webp" alt="Chromebooks" class="h-auto w-full mt-4 md:mt-6 rounded-lg max-w-4xl mx-auto" onerror="this.style.display='none'">
+             </div>
+        </header>
+        <div id="filter-search-controls" class="mb-10">
+             <div id="filter-buttons">
+                 <button class="filter-button active" data-filter="all">All Videos</button>
+                 <button class="filter-button" data-filter="notebooklm">NotebookLM</button>
+                 <button class="filter-button" data-filter="canvas">Canvas</button>
+             </div>
+             <div id="search-container">
+                  <input type="search" id="search-input" placeholder="Search videos...">
+                 <button id="search-icon-button" title="Search">
+                     <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+                 </button>
+             </div>
+        </div>
+        <div id="video-grid" class="grid gap-8"></div>
+        <div id="loading-indicator">Loading more videos...</div>
+        <div id="no-results-message" style="display: none;">No videos match your filter or search.</div>
+        <div id="end-of-content-message" style="display: none;">No more videos to load.</div>
+        </div>
+    <div id="video-modal" style="display: none;">
+         <button id="close-modal" class="modal-button" title="Close">&times;</button>
+         <div id="modal-content">
+              <iframe id="video-player-iframe" src="" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+              <button id="prev-video" class="modal-button" title="Previous Video"><svg viewBox="0 0 20 20"><path d="M12.707 14.707a1 1 0 01-1.414 0L7 10.414l4.293-4.293a1 1 0 111.414 1.414L9.414 10l3.293 3.293a1 1 0 010 1.414z"></path></svg></button>
+              <button id="next-video" class="modal-button" title="Next Video"><svg viewBox="0 0 20 20"><path d="M7.293 14.707a1 1 0 001.414 0L13 10.414 8.707 6.121a1 1 0 00-1.414 1.414L10.586 10l-3.293 3.293a1 1 0 000 1.414z"></path></svg></button>
+         </div>
+    </div>
+    <script>
+        // --- Element References ---
+        const videoGrid = document.getElementById('video-grid');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const endOfContentMessage = document.getElementById('end-of-content-message');
+        const noResultsMessage = document.getElementById('no-results-message');
+        const videoModal = document.getElementById('video-modal');
+        const modalContent = document.getElementById('modal-content');
+        const videoPlayerIframe = document.getElementById('video-player-iframe');
+        const closeModalButton = document.getElementById('close-modal');
+        const prevVideoButton = document.getElementById('prev-video');
+        const nextVideoButton = document.getElementById('next-video');
+        const filterSearchControls = document.getElementById('filter-search-controls');
+        const filterButtons = document.querySelectorAll('.filter-button');
+        const searchContainer = document.getElementById('search-container');
+        const searchIconButton = document.getElementById('search-icon-button');
+        const searchInput = document.getElementById('search-input');
+
+        // --- State Variables ---
+        let currentPage = 1;
+        let isLoading = false;
+        const videosPerPage = 12;
+        let loadedVideos = []; // Stores full video objects fetched from API before filtering
+        let displayedVideos = []; // Stores video objects currently displayed in the grid
+        let currentVideoIndex = -1; // Index within displayedVideos for modal navigation
+        let allVideosLoaded = false; // Tracks if the API has no more pages
+        let currentFilter = 'all';
+        let currentSearchTerm = '';
+        let isSearchActive = false;
+
+        // --- Touch Swipe Variables ---
+        let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+        const swipeThreshold = 50;
+
+        // --- Vimeo API Credentials (Placeholder - Replace with secure backend solution) ---
+        // WARNING: Exposing API keys directly in frontend code is insecure.
+        // This is for demonstration/testing purposes ONLY.
+        // In a real application, use a backend proxy to handle API calls.
+        const VIMEO_ACCESS_TOKEN = "85f387f5940732ea08308ffef87753bf"; // Replace with your actual token if testing
+        const VIMEO_USER_ID = "238871639"; // Replace with your actual user ID if testing
+
+        /**
+         * Fetches video data directly from Vimeo API (INSECURE - Frontend Token Exposure).
+         * NOTE: Removed the 'query' parameter to implement frontend search.
+         */
+        async function fetchVideos(page, limit) { // Removed filter/searchTerm params here
+            console.log(`FETCHING directly from Vimeo: page ${page}, limit ${limit}`);
+
+            // Check credentials placeholder
+            if (!VIMEO_ACCESS_TOKEN || VIMEO_ACCESS_TOKEN === "YOUR_VIMEO_API_TOKEN_HERE" || !VIMEO_USER_ID || VIMEO_USER_ID === "YOUR_VIMEO_USER_ID_HERE") {
+                console.error("Vimeo API Token or User ID is missing or still set to placeholder value in the script.");
+                loadingIndicator.textContent = 'Error: Vimeo credentials missing in script.';
+                noResultsMessage.textContent = 'Vimeo credentials not configured in the HTML script for testing.';
+                noResultsMessage.style.display = 'block';
+                allVideosLoaded = true;
+                return []; // Return empty array
+            }
+
+            const VIMEO_API_BASE_URL = 'https://api.vimeo.com';
+            // Construct the Vimeo API URL - NO SEARCH QUERY PARAMETER
+            let apiUrl = `${VIMEO_API_BASE_URL}/users/${VIMEO_USER_ID}/videos?page=${page}&per_page=${limit}&fields=uri,name,description,link,player_embed_url,pictures.base_link,tags&sort=date&direction=desc`;
+
+            console.log("Calling Vimeo API URL:", apiUrl); // Log the URL
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${VIMEO_ACCESS_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.vimeo.*+json;version=3.4',
+                    },
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `Vimeo API request failed: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        console.error('Vimeo API Error Response:', errorData);
+                        errorMsg += ` - ${errorData.error || errorData.developer_message || errorData.message || 'Unknown error'}`;
+                    } catch (e) { /* Ignore */ }
+                    throw new Error(errorMsg);
+                }
+
+                const vimeoData = await response.json();
+
+                // Process the data, adding a category property based on title
+                const videos = vimeoData.data.map(video => {
+                    const titleLower = (video.name || '').toLowerCase();
+                    let category = 'other'; // Default category
+                    if (titleLower.includes('notebooklm')) { category = 'notebooklm'; }
+                    else if (titleLower.includes('canvas')) { category = 'canvas'; }
+
+                    return {
+                        title: video.name || 'Untitled Video',
+                        embedUrl: video.player_embed_url || video.link,
+                        thumbnail: video.pictures?.base_link ? `${video.pictures.base_link}_640x360?r=pad` : null,
+                        description: video.description,
+                        tags: video.tags?.map(tag => tag.name) || [],
+                        category: category // Add category property
+                    };
+                });
+
+                console.log(`Received ${videos.length} raw videos from Vimeo API.`);
+                return videos; // Return the raw videos from API
+
+            } catch (error) {
+                console.error("Error fetching videos directly from Vimeo:", error);
+                loadingIndicator.textContent = 'Error loading videos.';
+                noResultsMessage.textContent = `Failed to load videos: ${error.message}`;
+                noResultsMessage.style.display = 'block';
+                allVideosLoaded = true;
+                return [];
+            }
+        }
+
+
+        /**
+         * Creates a video thumbnail element for the grid.
+         */
+        function createVideoElement(video, indexInDisplayed) { // index is now relative to displayedVideos
+            const div = document.createElement('div');
+            div.className = 'video-item'; // Start hidden
+            // Store index relative to the *displayed* videos for modal navigation
+            div.dataset.index = indexInDisplayed;
+            div.dataset.embedUrl = video.embedUrl;
+            div.dataset.title = video.title || 'Untitled Video';
+            // Store category if needed, though filtering happens before creation now
+            if (video.category) { div.dataset.category = video.category; }
+
+
+            const placeholderErrorUrl = `https://placehold.co/640x360/cccccc/ffffff?text=Error+Loading`;
+            const thumbnailUrl = video.thumbnail || placeholderErrorUrl;
+            const title = video.title || 'Video Title';
+
+            div.innerHTML = `
+                <div class="thumbnail-container">
+                    <img src="${thumbnailUrl}" alt="${title}" onerror="this.onerror=null; this.src='${placeholderErrorUrl}';" loading="lazy">
+                    <h3 class="overlay-title" title="${title}">${title}</h3>
+                </div>`;
+
+            // Use indexInDisplayed for opening the modal
+            div.addEventListener('click', () => openModal(indexInDisplayed));
+
+            requestAnimationFrame(() => {
+                div.classList.add('visible');
+            });
+
+            return div;
+        }
+
+        /**
+         * Displays the 'End of Content' or 'No Results' message appropriately.
+         */
+         function showEndOfContent(isFilterOrSearch = false) {
+            loadingIndicator.style.display = 'none';
+            // Check based on the length of the displayedVideos array
+            const hasVisibleItems = displayedVideos.length > 0;
+
+            if ((isFilterOrSearch || currentSearchTerm) && !hasVisibleItems) { // Check search term state too
+                noResultsMessage.style.display = 'block';
+                 noResultsMessage.textContent = 'No videos match your filter or search.';
+                endOfContentMessage.style.display = 'none';
+            } else if (hasVisibleItems && allVideosLoaded) { // Only show end if API has no more pages
+                noResultsMessage.style.display = 'none';
+                endOfContentMessage.style.display = 'block';
+            } else if (!hasVisibleItems && allVideosLoaded) { // No items displayed AND no more pages from API
+                 if (!noResultsMessage.textContent.startsWith('Failed to load videos') && !noResultsMessage.textContent.startsWith('Vimeo credentials not configured')) {
+                      noResultsMessage.style.display = 'block';
+                      noResultsMessage.textContent = 'No videos available for the current filter/search.';
+                      endOfContentMessage.style.display = 'none';
+                 }
+            } else {
+                 // If !allVideosLoaded, hide both messages while loading continues
+                 noResultsMessage.style.display = 'none';
+                 endOfContentMessage.style.display = 'none';
+            }
+            // Note: allVideosLoaded is set globally when fetchVideos returns fewer than requested items
+        }
+
+
+        /**
+         * Checks if the currently loaded content fills the viewport height.
+         */
+        function checkAndLoadIfContentNotFillingViewport() {
+            setTimeout(() => {
+                if (!isLoading && !allVideosLoaded && videoModal.style.display === 'none') {
+                    const contentHeight = document.body.offsetHeight;
+                    const viewportHeight = window.innerHeight;
+                    // Add a check for minimum number of displayed items to prevent rapid loops if API returns empty pages
+                    if (contentHeight <= viewportHeight && displayedVideos.length < videosPerPage * 2) { // Arbitrary limit to prevent infinite loops
+                        console.log("Content doesn't fill viewport, loading more...");
+                        loadMoreVideos();
+                    }
+                }
+            }, 300);
+        }
+
+        /**
+         * Filters videos based on current filter and search term.
+         */
+        function filterVideos(videosToFilter) {
+             const lowerSearchTerm = currentSearchTerm.toLowerCase();
+
+             return videosToFilter.filter(video => {
+                 // Check category filter first
+                 let categoryMatch = false;
+                 if (currentFilter === 'all') {
+                     categoryMatch = true;
+                 } else if (currentFilter === 'notebooklm' && video.category === 'notebooklm') {
+                     categoryMatch = true;
+                 } else if (currentFilter === 'canvas' && video.category === 'canvas') {
+                     categoryMatch = true;
+                 }
+                 // If category doesn't match, exclude immediately
+                 if (!categoryMatch) return false;
+
+                 // Check search term (only if category matched)
+                 if (!lowerSearchTerm) {
+                     return true; // No search term, include if category matched
+                 } else {
+                     // Check if title includes search term (case-insensitive)
+                     return video.title.toLowerCase().includes(lowerSearchTerm);
+                 }
+             });
+        }
+
+
+        /**
+         * Loads the next batch of videos, filters them, and appends them to the grid.
+         */
+        async function loadMoreVideos() {
+            if (isLoading || allVideosLoaded) return;
+
+            isLoading = true;
+            loadingIndicator.style.display = 'block';
+            noResultsMessage.style.display = 'none';
+            endOfContentMessage.style.display = 'none';
+            loadingIndicator.textContent = 'Loading more videos...';
+            // Don't reset noResultsMessage text here, let showEndOfContent handle it
+
+            try {
+                // Fetch raw videos for the current page
+                const rawNewVideos = await fetchVideos(currentPage, videosPerPage);
+
+                if (rawNewVideos && rawNewVideos.length > 0) {
+                    // Append raw videos to the master list
+                    loadedVideos.push(...rawNewVideos);
+
+                    // Filter the newly fetched videos based on current filter/search
+                    const filteredNewVideos = filterVideos(rawNewVideos);
+
+                    if (filteredNewVideos.length > 0) {
+                        // Append *filtered* videos to the grid
+                        filteredNewVideos.forEach(video => {
+                            // Add to displayedVideos array first
+                            displayedVideos.push(video);
+                            // Get index within the *displayed* array for modal navigation
+                            const indexInDisplayed = displayedVideos.length - 1;
+                            const videoElement = createVideoElement(video, indexInDisplayed);
+                            videoGrid.appendChild(videoElement);
+                        });
+                    } else {
+                        console.log("Fetched videos, but none matched current filter/search.");
+                        // If no new videos match, and we haven't reached the API end, try loading next page
+                        if (rawNewVideos.length === videosPerPage) {
+                             console.log("Trying next page...");
+                             currentPage++; // Increment page to fetch next time
+                             isLoading = false; // Release lock to allow next fetch immediately
+                             loadMoreVideos(); // Recursively call to fetch next page
+                             return; // Exit current execution
+                        }
+                    }
+
+                    currentPage++; // Increment page number for the next fetch
+                    // Check if this was the last page from the API
+                    if (rawNewVideos.length < videosPerPage) {
+                         console.log("Received fewer videos than requested from API, assuming end of API content.");
+                         allVideosLoaded = true; // Mark end of API pages
+                         showEndOfContent(currentFilter !== 'all' || currentSearchTerm !== ''); // Show appropriate end message
+                    } else {
+                         allVideosLoaded = false; // More pages might exist
+                    }
+
+                } else {
+                     // No videos returned from API this page
+                     console.log("No more videos returned from API.");
+                     allVideosLoaded = true; // Mark end of API pages
+                     showEndOfContent(currentFilter !== 'all' || currentSearchTerm !== ''); // Show appropriate end message
+                }
+            } catch (error) {
+                // Error handled within fetchVideos, but catch just in case
+                console.error("Error in loadMoreVideos flow:", error);
+                allVideosLoaded = true; // Stop loading on error
+            } finally {
+                isLoading = false;
+                // Hide loading indicator only if we haven't reached the end or shown an error
+                if (!allVideosLoaded && loadingIndicator.textContent === 'Loading more videos...') {
+                    loadingIndicator.style.display = 'none';
+                }
+                // Check viewport fill only if more pages might exist
+                if (!allVideosLoaded) {
+                    checkAndLoadIfContentNotFillingViewport();
+                }
+            }
+        }
+
+
+        /**
+         * Resets the video grid with transition, clears state, and loads first page.
+         */
+        function resetAndLoad() {
+             console.log(`Resetting grid. Filter: ${currentFilter}, Search: ${currentSearchTerm}`);
+             videoGrid.classList.add('grid-loading'); // Fade out current grid
+
+             // Clear state immediately
+             loadedVideos = []; // Clear master list
+             displayedVideos = []; // Clear displayed list
+             currentPage = 1;
+             allVideosLoaded = false; // Reset API end flag
+             currentVideoIndex = -1;
+
+             // Hide messages
+             noResultsMessage.style.display = 'none';
+             endOfContentMessage.style.display = 'none';
+             loadingIndicator.style.display = 'none';
+             loadingIndicator.textContent = 'Loading more videos...';
+             noResultsMessage.textContent = 'No videos match your filter or search.';
+
+             // Wait for fade out transition before clearing and loading
+             setTimeout(() => {
+                 videoGrid.innerHTML = ''; // Clear grid content
+                 videoGrid.classList.remove('grid-loading'); // Remove fade effect
+                 loadMoreVideos(); // Load first page with new filter/search
+             }, 300); // Match CSS transition duration
+        }
+
+        /** Closes the search UI visually without triggering a reload. */
+        function closeSearchUI() {
+            if (!isSearchActive) return;
+            isSearchActive = false;
+            filterSearchControls.classList.remove('search-active');
+            filterButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter));
+            console.log("Search UI closed visually.");
+        }
+
+        /** Closes search UI AND resets search term/results if a search was active. */
+        function closeSearchUIAndReset() {
+            const wasSearching = currentSearchTerm !== '';
+            closeSearchUI();
+            if (wasSearching) {
+                currentSearchTerm = '';
+                searchInput.value = '';
+                console.log("Search term cleared, reloading grid.");
+                resetAndLoad(); // This will refetch page 1 without search term
+            }
+        }
+
+        // --- Event Listeners Setup ---
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const newFilter = button.dataset.filter;
+                let needsReload = false;
+
+                // If search is active, clear search term first
+                if (isSearchActive) {
+                    closeSearchUI(); // Visually close search UI
+                    currentSearchTerm = ''; // Clear search term state
+                    searchInput.value = '';
+                    needsReload = true; // Need reload because search term changed
+                }
+
+                // Check if filter actually changed
+                if (newFilter !== currentFilter) {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    currentFilter = newFilter;
+                    needsReload = true; // Filter changed
+                    console.log(`Filter changed to: ${currentFilter}`);
+                }
+
+                if (needsReload) { resetAndLoad(); }
+            });
+        });
+
+        searchIconButton.addEventListener('click', () => {
+            if (isSearchActive) {
+                // If clicking icon while search is active, only close UI if input is empty, otherwise keep it open
+                if (searchInput.value === '') {
+                    closeSearchUI(); // Just close visually
+                } else {
+                   // If input has text, maybe trigger reset? Or just leave open? Let's reset.
+                   closeSearchUIAndReset();
+                }
+            }
+            else {
+                isSearchActive = true;
+                filterSearchControls.classList.add('search-active');
+                searchInput.focus();
+                console.log("Search UI opened.");
+            }
+        });
+
+        let searchDebounceTimer;
+        searchInput.addEventListener('input', () => {
+             clearTimeout(searchDebounceTimer);
+             searchDebounceTimer = setTimeout(() => {
+                 const newSearchTerm = searchInput.value.trim();
+                 // Trigger reload only if search term actually changes
+                 if (newSearchTerm !== currentSearchTerm) {
+                     console.log(`Search term changed to: "${newSearchTerm}"`);
+                     currentSearchTerm = newSearchTerm; // Update state
+
+                     // Ensure search UI is active visually when typing
+                     if (!isSearchActive && newSearchTerm) {
+                         isSearchActive = true;
+                         filterSearchControls.classList.add('search-active');
+                     }
+                     // When searching, filter should implicitly be 'all' for data fetching,
+                     // but visually keep 'All Videos' selected if filter wasn't 'all' before search
+                     if (currentFilter !== 'all') {
+                         // currentFilter = 'all'; // Let filter logic handle this
+                         filterButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.filter === 'all'));
+                     }
+                     resetAndLoad(); // Trigger reset and load with new search term
+                 }
+             }, 300);
+        });
+
+         searchInput.addEventListener('keydown', (event) => {
+              if (event.key === 'Escape' && isSearchActive) {
+                  event.preventDefault();
+                  // If escape is pressed, clear search and reload
+                  closeSearchUIAndReset();
+              }
+         });
+
+        // --- Modal Functions ---
+        function openModal(indexInDisplayed) { // Index is relative to displayedVideos
+            if (typeof indexInDisplayed !== 'number' || indexInDisplayed < 0 || indexInDisplayed >= displayedVideos.length) {
+                console.error("Invalid index for openModal:", indexInDisplayed); return;
+            }
+            // Get video data from the displayedVideos array
+            const videoData = displayedVideos[indexInDisplayed];
+            if (!videoData || !videoData.embedUrl) { console.error("Missing video data or embedUrl for index:", indexInDisplayed); return; }
+
+            document.body.classList.add('modal-open');
+            showVideoInModal(videoData.embedUrl, indexInDisplayed); // Pass the correct embedUrl
+            videoModal.style.display = 'flex';
+            window.addEventListener('keydown', handleKeyboardNav);
+            videoModal.addEventListener('touchstart', handleTouchStart, { passive: true });
+            videoModal.addEventListener('touchmove', handleTouchMove, { passive: false });
+            videoModal.addEventListener('touchend', handleTouchEnd);
+        }
+        function closeModal() {
+            document.body.classList.remove('modal-open');
+            videoModal.style.display = 'none';
+            videoPlayerIframe.src = ''; // Stop video playback
+            currentVideoIndex = -1;
+            if (document.fullscreenElement) { document.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err)); }
+            window.removeEventListener('keydown', handleKeyboardNav);
+            videoModal.removeEventListener('touchstart', handleTouchStart);
+            videoModal.removeEventListener('touchmove', handleTouchMove);
+            videoModal.removeEventListener('touchend', handleTouchEnd);
+            checkAndLoadIfContentNotFillingViewport();
+        }
+
+        /** Shows the video in the modal and adds autoplay parameters (muted removed). */
+        function showVideoInModal(embedUrl, indexInDisplayed) { // index is relative to displayedVideos
+             if (typeof indexInDisplayed !== 'number' || indexInDisplayed < 0 || indexInDisplayed >= displayedVideos.length) return;
+             currentVideoIndex = indexInDisplayed; // Store the index relative to displayed array
+
+             // --- Add autoplay parameter (muted removed) ---
+             let finalUrl = embedUrl;
+             if (finalUrl.includes('?')) {
+                 finalUrl += '&autoplay=1';
+             } else {
+                 finalUrl += '?autoplay=1';
+             }
+             // --- End Autoplay ---
+
+             console.log("Setting iframe src:", finalUrl);
+             videoPlayerIframe.src = finalUrl;
+             updateModalNavButtons();
+        }
+
+        function updateModalNavButtons() {
+             // Base decisions on the displayedVideos array length
+             if (displayedVideos.length === 0) { prevVideoButton.disabled = true; nextVideoButton.disabled = true; return; }
+             prevVideoButton.disabled = currentVideoIndex <= 0;
+             nextVideoButton.disabled = currentVideoIndex >= displayedVideos.length - 1;
+        }
+        function showNextVideo() {
+            // Navigate based on currentVideoIndex within displayedVideos
+            if (!nextVideoButton.disabled && currentVideoIndex < displayedVideos.length - 1) {
+                 const nextIndex = currentVideoIndex + 1;
+                 if (displayedVideos[nextIndex] && displayedVideos[nextIndex].embedUrl) { showVideoInModal(displayedVideos[nextIndex].embedUrl, nextIndex); }
+                 else { console.error("Missing embedUrl for next video at index:", nextIndex); }
+            }
+        }
+        function showPreviousVideo() {
+            // Navigate based on currentVideoIndex within displayedVideos
+            if (!prevVideoButton.disabled && currentVideoIndex > 0) {
+                 const prevIndex = currentVideoIndex - 1;
+                  if (displayedVideos[prevIndex] && displayedVideos[prevIndex].embedUrl) { showVideoInModal(displayedVideos[prevIndex].embedUrl, prevIndex); }
+                  else { console.error("Missing embedUrl for previous video at index:", prevIndex); }
+            }
+        }
+
+        /** Handles keyboard navigation (Arrows, Escape) within the modal. */
+        function handleKeyboardNav(event) {
+             if (videoModal.style.display !== 'flex') return;
+
+             if (event.key === 'ArrowRight') { event.preventDefault(); showNextVideo(); }
+             else if (event.key === 'ArrowLeft') { event.preventDefault(); showPreviousVideo(); }
+             else if (event.key === 'Escape') { event.preventDefault(); closeModal(); }
+        }
+
+        // Touch Event Handlers
+        function handleTouchStart(event) { const firstTouch = event.touches[0]; touchStartX = firstTouch.clientX; touchStartY = firstTouch.clientY; touchEndX = touchStartX; touchEndY = touchStartY; }
+        function handleTouchMove(event) { if (event.touches.length === 1) { const firstTouch = event.touches[0]; touchEndX = firstTouch.clientX; touchEndY = firstTouch.clientY; if (touchStartX !== 0) { let deltaX = Math.abs(touchEndX - touchStartX); let deltaY = Math.abs(touchEndY - touchStartY); if (deltaX > deltaY + 5) { event.preventDefault(); } } } }
+        function handleTouchEnd(event) { if (touchStartX === 0 || touchEndX === 0) return; let deltaX = touchEndX - touchStartX; let deltaY = touchEndY - touchStartY; if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) { if (deltaX < 0) { if (!nextVideoButton.disabled) showNextVideo(); } else { if (!prevVideoButton.disabled) showPreviousVideo(); } } touchStartX = 0; touchStartY = 0; touchEndX = 0; touchEndY = 0; }
+        // Scroll Handler
+        function handleScroll() { if (videoModal.style.display === 'flex' || isLoading || allVideosLoaded) return; const scrollCheckHeight = document.documentElement.scrollHeight; const scrollBuffer = 250; if ((window.innerHeight + window.scrollY) >= scrollCheckHeight - scrollBuffer) { loadMoreVideos(); } }
+
+        // --- Initial Setup ---
+        window.addEventListener('scroll', handleScroll);
+        closeModalButton.addEventListener('click', closeModal);
+        prevVideoButton.addEventListener('click', showPreviousVideo);
+        nextVideoButton.addEventListener('click', showNextVideo);
+        videoModal.addEventListener('click', (event) => { if (event.target === videoModal) closeModal(); });
+        document.addEventListener('DOMContentLoaded', () => { loadMoreVideos(); }); // Initial load
+
+    </script>
+
+    <script>
+        // Basic mobile menu toggle for the main header
+        const menuButton = document.getElementById('mobile-menu-button'); // Use specific ID
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (menuButton && mobileMenu) { // Check if elements exist
+            menuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        } else {
+            console.error("Mobile menu button or menu container not found.");
+        }
+    </script>
+
+</body>
+</html>
